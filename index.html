@@ -936,13 +936,19 @@ async function getRecommendations(){
       showsPool = pages.flat();
     }
     const ownedIds = new Set(entries.map(e=>e.tvmazeId).filter(Boolean));
-    const scored = showsPool
+    const scoredAll = showsPool
       .filter(s => s.genres && s.genres.length && !ownedIds.has(s.id) && s.rating && s.rating.average)
       .map(s => ({ show:s, match: s.genres.filter(g=>topGenres.includes(g)).length }))
       .filter(s => s.match>0)
-      .sort((a,b) => (b.match-a.match) || (b.show.rating.average-a.show.rating.average))
-      .slice(0,8);
-    if(!scored.length){ el('recResults').innerHTML = `<div class="muted-msg">Couldn't find fresh matches right now.</div>`; return; }
+      .sort((a,b) => (b.match-a.match) || (b.show.rating.average-a.show.rating.average));
+    if(!scoredAll.length){ el('recResults').innerHTML = `<div class="muted-msg">Couldn't find fresh matches right now.</div>`; return; }
+    // Take a wider pool of strong matches, then shuffle so each click surfaces a different mix.
+    const pool = scoredAll.slice(0, 30);
+    for(let i = pool.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    const scored = pool.slice(0, 8);
     el('recResults').innerHTML = scored.map(({show}) => `
       <div class="rec-card" data-id="${show.id}">
         <img src="${show.image?show.image.medium:''}" alt="">
@@ -1058,7 +1064,7 @@ function render(){
   if(currentCatFilter !== 'all'){
     const list = entries.filter(e=>e.category===currentCatFilter).filter(byStatus).sort((a,b)=>b.rating-a.rating);
     container.innerHTML = list.length
-      ? `<div class="ledger${gridClass}">${list.map(entryRowHtml).join('')}</div>`
+      ? `<div class="ledger${gridClass}">${list.map(e=>entryRowHtml(e)).join('')}</div>`
       : `<div class="empty-state">Nothing here yet.</div>`;
   }else{
     const cats = ['series','anime','movie'];
@@ -1066,7 +1072,7 @@ function render(){
     cats.forEach(cat => {
       const list = entries.filter(e=>e.category===cat).filter(byStatus).sort((a,b)=>b.rating-a.rating);
       if(!list.length) return;
-      html += `<h3 class="sub-h"><span class="dot dot-${cat}"></span>${catNames[cat]}</h3><div class="ledger${gridClass}">${list.map(entryRowHtml).join('')}</div>`;
+      html += `<h3 class="sub-h"><span class="dot dot-${cat}"></span>${catNames[cat]}</h3><div class="ledger${gridClass}">${list.map(e=>entryRowHtml(e)).join('')}</div>`;
     });
     container.innerHTML = html || `<div class="empty-state">Nothing logged yet — add a title above to start your ledger.</div>`;
   }
