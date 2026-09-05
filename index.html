@@ -214,6 +214,15 @@
   .profile-badges{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
   .profile-badge{ font-size:11px; padding:3px 9px; border-radius:20px; border:1px solid var(--border); color:var(--gold-soft); background:rgba(240,180,41,0.08); }
 
+  /* ---------- Mondial / global rating ---------- */
+  .gr-row{ display:flex; gap:12px; align-items:center; padding:9px 4px; border-bottom:1px solid var(--border); }
+  .gr-row img{ width:36px;height:52px;object-fit:cover;border-radius:2px;background:var(--surface-2);flex-shrink:0; }
+  .gr-rank{ width:22px; color:var(--text-dim); font-family:'Fraunces',serif; flex-shrink:0; }
+  .gr-body{ flex:1; min-width:0; }
+  .gr-title{ font-size:14px; }
+  .gr-meta{ font-size:11px; color:var(--text-dim); margin-top:2px; }
+  .gr-score{ font-family:'Fraunces',serif; font-weight:700; color:var(--gold); font-size:16px; flex-shrink:0; }
+
   /* ---------- Ledger ---------- */
   .ledger-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
   .view-toggle{display:flex;gap:4px;}
@@ -322,6 +331,25 @@
         <button class="btn-secondary" id="lbShowMoreBtn">Show more</button>
       </div>
       <div id="yourRank" class="your-rank"></div>
+    </div>
+  </section>
+
+  <section class="global-rating-section">
+    <div class="leaderboard-wrap">
+      <div class="lb-head">
+        <h2>🌍 Mondial Rating</h2>
+        <div class="tab-row" id="grTabs" style="margin:0;">
+          <button class="tab-chip active" data-catfilter="all">All</button>
+          <button class="tab-chip" data-catfilter="series">Series</button>
+          <button class="tab-chip" data-catfilter="anime">Anime</button>
+          <button class="tab-chip" data-catfilter="movie">Movies</button>
+        </div>
+      </div>
+      <div class="muted-msg" style="margin-bottom:10px;">Average of everyone's ratings for each title — needs at least 2 people rating it to qualify.</div>
+      <div id="globalRatingsBody"></div>
+      <div id="grShowMoreRow" class="show-more-row hidden">
+        <button class="btn-secondary" id="grShowMoreBtn">Show more</button>
+      </div>
     </div>
   </section>
 
@@ -459,7 +487,30 @@
       </div>
       <button class="btn-secondary" id="closeViewModal">Close</button>
     </div>
-    <div id="modalLedger"></div>
+    <div style="margin-top:14px;">
+      <button class="btn-secondary hidden" id="modalEditBtn">Edit profile</button>
+    </div>
+    <div id="profileEditPanel" class="add-form hidden" style="margin-top:12px;">
+      <div class="field-grid">
+        <div class="field">
+          <label for="editUsername">Username</label>
+          <input type="text" id="editUsername">
+        </div>
+        <div class="field">
+          <label for="editPin">New PIN (leave blank to keep current)</label>
+          <input type="password" id="editPin" maxlength="8" placeholder="••••">
+        </div>
+        <div class="field full">
+          <label for="editAvatarFile">Profile picture</label>
+          <input type="file" id="editAvatarFile" accept="image/*">
+        </div>
+      </div>
+      <div class="status-msg" id="profileEditMsg"></div>
+      <div class="form-actions">
+        <button class="btn-primary" id="saveProfileEditBtn">Save changes</button>
+        <button class="btn-secondary" id="cancelProfileEditBtn">Cancel</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -569,6 +620,9 @@ let usersIndex = {}; // keyed by lowercase username: { [key]: {username, pinHash
 let viewMode = 'list';
 let lbMetric = 'overall';
 let lbShowCount = 12; // how many rows beyond the top-3 podium are currently shown
+let globalRatingsData = [];
+let grCatFilter = 'all';
+let grShowCount = 12;
 let currentStatusFilter = 'all', currentCatFilter = 'all';
 let addCategory = 'series';
 let pendingShow = null, editingId = null;
@@ -633,6 +687,7 @@ async function showApp(){
   clearStorageWarning();
   sizeStarWidget();
   await loadLeaderboard();
+  loadGlobalRatings();
   render();
 }
 
@@ -760,6 +815,7 @@ async function saveMyEntries(){
   usersIndex[key] = { username: currentUser, pinHash, ...summary, updatedAt: Date.now() };
   try{ await dbSet(INDEX_PATH, usersIndex); }catch(e){}
   await loadLeaderboard();
+  loadGlobalRatings();
 }
 
 // ================= BACKUP: EXPORT / IMPORT =================
@@ -823,7 +879,7 @@ function renderLeaderboard(){
   el('podium').innerHTML = top3.map((u,i) => `
     <div class="podium-card rank-${i+1}" data-username="${escapeHtml(u.username)}">
       <span class="crown">${crowns[i]}</span>
-      <div class="p-avatar">${avatarLetter(u.username)}</div>
+      <div class="p-avatar">${avatarInner(u, avatarLetter(u.username))}</div>
       <div class="p-title">${i===0 ? kingTitles[lbMetric] : (i===1 ? '2nd place' : '3rd place')}</div>
       <div class="p-name">${escapeHtml(u.username)}</div>
       <div class="p-stat">${fmtTime(metricValue(u))} · ${metricTitles(u)} titles</div>
@@ -860,6 +916,69 @@ function renderLeaderboard(){
 el('lbShowMoreBtn').addEventListener('click', () => {
   lbShowCount += 12;
   renderLeaderboard();
+});
+
+// ================= MONDIAL RATING (community average per title) =================
+const GR_MIN_RATERS = 2;
+
+async function loadGlobalRatings(){
+  const usernames = Object.values(usersIndex).map(u => u.username);
+  if(!usernames.length){ globalRatingsData = []; renderGlobalRatings(); return; }
+  el('globalRatingsBody').innerHTML = `<div class="muted-msg">Gathering ratings from ${usernames.length} user${usernames.length>1?'s':''}…</div>`;
+  const lists = await Promise.all(usernames.map(async u => {
+    try{ const res = await dbGet(entriesPath(u)); return Array.isArray(res) ? res : []; }
+    catch(e){ return []; }
+  }));
+  const agg = {};
+  lists.forEach(list => {
+    list.forEach(entry => {
+      if(typeof entry.rating !== 'number') return;
+      const showKey = entry.tvmazeId ? `tv-${entry.tvmazeId}` : `m-${(entry.name||'').toLowerCase()}-${entry.year||''}`;
+      if(!agg[showKey]) agg[showKey] = { name: entry.name, poster: entry.poster, category: entry.category, year: entry.year, sum: 0, count: 0 };
+      agg[showKey].sum += entry.rating;
+      agg[showKey].count += 1;
+    });
+  });
+  globalRatingsData = Object.values(agg).map(x => ({ ...x, avg: x.sum / x.count }));
+  renderGlobalRatings();
+}
+
+function renderGlobalRatings(){
+  let list = globalRatingsData.filter(x => x.count >= GR_MIN_RATERS);
+  if(grCatFilter !== 'all') list = list.filter(x => x.category === grCatFilter);
+  list = list.sort((a,b) => b.avg - a.avg || b.count - a.count);
+  const body = el('globalRatingsBody');
+  if(!list.length){
+    body.innerHTML = `<div class="muted-msg">Not enough shared ratings yet — a title needs at least ${GR_MIN_RATERS} people rating it to show up here.</div>`;
+    el('grShowMoreRow').classList.add('hidden');
+    return;
+  }
+  const shown = list.slice(0, grShowCount);
+  body.innerHTML = shown.map((x,i) => `
+    <div class="gr-row">
+      <span class="gr-rank">${i+1}</span>
+      ${x.poster ? `<img src="${x.poster}" alt="">` : `<div style="width:36px;height:52px;background:var(--surface-2);border-radius:2px;flex-shrink:0;"></div>`}
+      <div class="gr-body">
+        <div class="gr-title">${escapeHtml(x.name)}</div>
+        <div class="gr-meta">${catNames[x.category]||x.category} · ${x.year||'—'} · ${x.count} rating${x.count>1?'s':''}</div>
+      </div>
+      <div class="gr-score">${x.avg.toFixed(1)}</div>
+    </div>`).join('');
+  const remaining = list.length - shown.length;
+  el('grShowMoreRow').classList.toggle('hidden', remaining <= 0);
+  if(remaining > 0) el('grShowMoreBtn').textContent = `Show more (${remaining} left)`;
+}
+
+el('grTabs').addEventListener('click', e => {
+  const btn = e.target.closest('.tab-chip'); if(!btn) return;
+  grCatFilter = btn.dataset.catfilter;
+  grShowCount = 12;
+  document.querySelectorAll('#grTabs .tab-chip').forEach(c => c.classList.toggle('active', c===btn));
+  renderGlobalRatings();
+});
+el('grShowMoreBtn').addEventListener('click', () => {
+  grShowCount += 12;
+  renderGlobalRatings();
 });
 
 // ================= USER SEARCH =================
@@ -1159,38 +1278,109 @@ function rankBadgesFor(key){
   return badges;
 }
 
-async function openUserProfile(username){
-  const key = username.toLowerCase();
-  el('modalUserTitle').textContent = username;
-  el('modalAvatar').textContent = (username[0]||'?').toUpperCase();
-  el('modalUserStats').textContent = 'Loading…';
-  el('modalBadges').innerHTML = rankBadgesFor(key).map(b => `<span class="profile-badge">${escapeHtml(b)}</span>`).join('');
-  el('modalLedger').innerHTML = '';
-  el('viewListModal').classList.remove('hidden');
-  let list = [];
-  try{
-    const res = await dbGet(entriesPath(username));
-    list = Array.isArray(res) ? res : [];
-  }catch(e){
-    el('modalUserStats').textContent = 'Couldn\'t load this list — check your connection and try again.';
-    return;
-  }
-  if(!list.length){
-    el('modalUserStats').textContent = 'No titles logged yet.';
-    return;
-  }
-  const totalMinutes = list.reduce((a,e)=>a+e.episodesWatched*e.rewatch*e.avgRuntime,0);
-  const totalCompleted = list.filter(e=>e.status==='completed').length;
-  el('modalUserStats').textContent = `${list.length} titles · ${fmtTime(totalMinutes)} watched · ${totalCompleted} finished`;
-  const cats = ['series','anime','movie'];
-  let html = '';
-  cats.forEach(cat => {
-    const catList = list.filter(e=>e.category===cat).sort((a,b)=>b.rating-a.rating);
-    if(!catList.length) return;
-    html += `<h3 class="sub-h"><span class="dot dot-${cat}"></span>${catNames[cat]}</h3><div class="ledger grid-view">${catList.map(e=>entryRowHtml(e,true)).join('')}</div>`;
-  });
-  el('modalLedger').innerHTML = html;
+function avatarInner(rec, letter){
+  return (rec && rec.avatar) ? `<img src="${rec.avatar}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : letter;
 }
+
+function openUserProfile(username){
+  const key = username.toLowerCase();
+  const rec = usersIndex[key];
+  el('modalUserTitle').textContent = username;
+  el('modalAvatar').innerHTML = avatarInner(rec, (username[0]||'?').toUpperCase());
+  if(!rec){
+    el('modalUserStats').textContent = 'No data found for this user.';
+    el('modalBadges').innerHTML = '';
+  }else{
+    el('modalUserStats').textContent = `${rec.totalTitles||0} titles logged · ${fmtTime(rec.totalMinutes||0)} watched`;
+    el('modalBadges').innerHTML = rankBadgesFor(key).map(b => `<span class="profile-badge">${escapeHtml(b)}</span>`).join('');
+  }
+  el('modalEditBtn').classList.toggle('hidden', key !== (currentUser||'').toLowerCase());
+  hideProfileEdit();
+  el('viewListModal').classList.remove('hidden');
+}
+
+// ================= EDIT MY PROFILE =================
+function hideProfileEdit(){
+  el('profileEditPanel').classList.add('hidden');
+  el('profileEditMsg').textContent = '';
+}
+function readAndResizeImage(file, maxSize){
+  maxSize = maxSize || 128;
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if(w >= h){ if(w > maxSize){ h = Math.round(h * maxSize / w); w = maxSize; } }
+        else{ if(h > maxSize){ w = Math.round(w * maxSize / h); h = maxSize; } }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.75));
+      };
+      img.onerror = () => reject(new Error('bad image'));
+      img.src = reader.result;
+    };
+    reader.onerror = () => reject(new Error('read failed'));
+    reader.readAsDataURL(file);
+  });
+}
+
+el('modalEditBtn').addEventListener('click', () => {
+  el('editUsername').value = currentUser || '';
+  el('editPin').value = '';
+  el('editAvatarFile').value = '';
+  el('profileEditMsg').textContent = '';
+  el('profileEditPanel').classList.remove('hidden');
+});
+el('cancelProfileEditBtn').addEventListener('click', hideProfileEdit);
+
+el('saveProfileEditBtn').addEventListener('click', async () => {
+  if(!currentUser) return;
+  const msg = el('profileEditMsg');
+  const oldKey = currentUser.toLowerCase();
+  const newUsername = el('editUsername').value.trim();
+  const newPin = el('editPin').value.trim();
+  const file = el('editAvatarFile').files[0];
+
+  if(!newUsername){ msg.textContent = 'Username can\'t be empty.'; return; }
+  if(!/^[a-zA-Z0-9_\- ]{2,24}$/.test(newUsername)){ msg.textContent = 'Use 2–24 letters, numbers, spaces, - or _.'; return; }
+  const newKey = newUsername.toLowerCase();
+  if(newKey !== oldKey && usersIndex[newKey]){ msg.textContent = 'That username is already taken.'; return; }
+
+  msg.textContent = 'Saving…';
+  el('saveProfileEditBtn').disabled = true;
+  try{
+    const existingRec = usersIndex[oldKey] || {};
+    let avatarDataUrl = existingRec.avatar || '';
+    if(file){
+      try{ avatarDataUrl = await readAndResizeImage(file); }
+      catch(e){ msg.textContent = 'Couldn\'t read that image — try a different file.'; el('saveProfileEditBtn').disabled=false; return; }
+    }
+    const pinHash = newPin ? await sha256Hex(newPin) : (existingRec.pinHash || '');
+    const updatedRec = { ...existingRec, username: newUsername, pinHash, avatar: avatarDataUrl, updatedAt: Date.now() };
+
+    if(newKey !== oldKey){
+      await dbSet(entriesPath(newUsername), entries);
+      await dbSet(entriesPath(currentUser), null);
+      delete usersIndex[oldKey];
+    }
+    usersIndex[newKey] = updatedRec;
+    await dbSet(INDEX_PATH, usersIndex);
+
+    currentUser = newUsername;
+    currentPin = newPin || currentPin;
+    setAccount({username:currentUser, pin:currentPin});
+
+    hideProfileEdit();
+    el('viewListModal').classList.add('hidden');
+    await showApp();
+  }catch(e){
+    msg.textContent = 'Something went wrong saving your profile — check your connection and try again.';
+  }
+  el('saveProfileEditBtn').disabled = false;
+});
 
 function render(){
   const totalTitles = entries.length;
