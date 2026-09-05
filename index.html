@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Watch Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c0e15;
+    --bg-alt:#141826;
+    --surface:#1a1e2b;
+    --surface-2:#232939;
+    --border:#2c3243;
+    --text:#f2eee2;
+    --text-dim:#8d93a8;
+    --gold:#f0b429;
+    --gold-soft:#f7d67a;
+    --teal:#4fd1c5;
+    --clay:#e2725b;
+    --blue:#7c9cff;
+    --violet:#c3a6f0;
+    --silver:#c7cddb;
+    --bronze:#d68a5a;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:radial-gradient(ellipse at top, var(--bg-alt) 0%, var(--bg) 55%);
+    color:var(--text); font-family:'Space Grotesk',sans-serif; -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  .hidden{display:none !important;}
+  .page{ max-width:1080px; margin:0 auto; padding:0 clamp(16px,4vw,40px) 90px; }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
+    padding:16px clamp(16px,4vw,40px); border-bottom:1px solid var(--border); max-width:1080px; margin:0 auto;
+  }
+  .brand{font-family:'Fraunces',serif;font-weight:600;font-size:17px;letter-spacing:-0.01em;}
+  .brand span{color:var(--gold);}
+  .topbar-right{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .user-chip{font-size:13px; color:var(--text-dim);}
+  .user-chip b{color:var(--text);}
+
+  button{ font-family:'Space Grotesk',sans-serif; font-size:14px; cursor:pointer; border-radius:4px; border:1px solid var(--border); }
+  .btn-primary{ background:var(--gold); color:#1c1404; border:none; font-weight:700; padding:10px 18px; white-space:nowrap; }
+  .btn-primary:hover{background:var(--gold-soft);}
+  .btn-secondary{ background:transparent; color:var(--text); padding:8px 14px; font-size:13px; }
+  .btn-secondary:hover{border-color:var(--text-dim);}
+  .btn-text{ background:none; border:none; color:var(--text-dim); font-size:13px; padding:2px 0; text-decoration:underline; }
+  .btn-text.danger{color:var(--clay);}
+
+  /* ---------- Login ---------- */
+  .login-screen{
+    min-height:calc(100vh - 60px); display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .login-card{
+    max-width:400px; width:100%; background:var(--surface); border:1px solid var(--border);
+    border-radius:10px; padding:36px 28px; box-shadow:0 20px 60px rgba(0,0,0,0.4);
+  }
+  .login-card h1{font-family:'Fraunces',serif;font-size:28px;font-weight:600;margin:0 0 8px;}
+  .login-card p{color:var(--text-dim);font-size:14px;line-height:1.5;margin:0 0 22px;}
+  .login-field{margin-bottom:14px;}
+  .login-field label{font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px;}
+  .login-note{font-size:11.5px;color:var(--text-dim);line-height:1.5;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);}
+  .login-msg{font-size:13px;color:var(--clay);min-height:18px;margin-top:8px;}
+
+  input[type=text], input[type=number], input[type=url], input[type=password]{
+    background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+    font-family:'Space Grotesk',sans-serif; font-size:14px; padding:10px 12px; border-radius:4px; width:100%;
+  }
+  input::placeholder{color:var(--text-dim);}
+  input:focus, select:focus{outline:2px solid var(--gold); outline-offset:1px;}
+  select{
+    background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+    font-family:'Space Grotesk',sans-serif; font-size:14px; padding:10px 12px; border-radius:4px;
+  }
+
+  /* ---------- Hero ---------- */
+  .hero{ padding:34px 0 10px; }
+  .hero h1{ font-family:'Fraunces',serif; font-weight:600; font-size:clamp(30px,6vw,42px); margin:0 0 8px; letter-spacing:-0.01em; }
+  .hero p.tagline{ color:var(--text-dim); font-size:15px; max-width:52ch; line-height:1.5; margin:0 0 24px; }
+
+  .stats-row{ display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+  .stat{ padding:14px 4px 14px 0; border-left:1px solid var(--border); }
+  .stat:first-child{border-left:none;padding-left:0;}
+  .stat-num{ display:block; font-family:'Fraunces',serif; font-weight:600; font-size:22px; color:var(--gold); line-height:1.1; }
+  .stat-label{ display:block; font-size:11px; color:var(--text-dim); margin-top:4px; line-height:1.3; }
+  @media (max-width:480px){ .stats-row{grid-template-columns:repeat(2,1fr);} .stat:nth-child(3){border-left:none;} }
+
+  .cat-breakdown{ display:flex; gap:18px; margin-top:12px; flex-wrap:wrap; }
+  .cat-pill{ font-size:12px; color:var(--text-dim); }
+  .cat-pill b{ color:var(--text); font-weight:600; }
+  .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;position:relative;top:-1px;}
+  .dot-series{background:var(--blue);} .dot-anime{background:var(--violet);} .dot-movie{background:var(--gold);}
+
+  .storage-warning{ margin-top:14px; padding:10px 12px; border:1px solid var(--clay); border-radius:4px; background:rgba(226,114,91,0.1); color:var(--text); font-size:12.5px; line-height:1.5; }
+  .backup-row{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+  .backup-row .btn-secondary{ font-size:12px; padding:7px 12px; }
+
+  /* ---------- Sections ---------- */
+  h2{ font-family:'Fraunces',serif; font-weight:500; font-size:21px; margin:0 0 14px; }
+  h3.sub-h{ font-family:'Fraunces',serif; font-weight:500; font-size:16px; margin:26px 0 10px; display:flex; align-items:center; gap:8px;}
+  section{margin-bottom:44px;}
+
+  .tab-row{ display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+  .tab-chip{ background:transparent; border:1px solid var(--border); color:var(--text-dim); font-size:12px; padding:6px 13px; border-radius:20px; font-family:'Space Grotesk',sans-serif; cursor:pointer; }
+  .tab-chip.active{ border-color:var(--gold); color:var(--gold); background:rgba(240,180,41,0.08); }
+
+  .search-row{display:flex;gap:8px;}
+  .search-results{margin-top:10px;}
+  .result-row{ display:flex; gap:12px; align-items:center; padding:8px; border:1px solid var(--border); border-radius:4px; margin-bottom:6px; cursor:pointer; background:var(--surface); }
+  .result-row:hover{border-color:var(--gold);}
+  .result-row img{width:36px;height:52px;object-fit:cover;background:var(--surface-2);border-radius:2px;}
+  .result-row .r-title{font-size:14px;}
+  .result-row .r-meta{font-size:12px;color:var(--text-dim);}
+  .muted-msg{color:var(--text-dim);font-size:13px;padding:8px 0;}
+
+  .add-form{ margin-top:16px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:20px; }
+  .add-form-head{display:flex;gap:14px;margin-bottom:18px;}
+  .add-form-head img{width:64px;height:92px;object-fit:cover;border-radius:4px;background:var(--surface-2);}
+  .add-form-head .afh-title{font-family:'Fraunces',serif;font-size:18px;font-weight:600;}
+  .add-form-head .afh-meta{font-size:12px;color:var(--text-dim);margin-top:4px;}
+  .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+  @media (max-width:520px){ .field-grid{grid-template-columns:1fr;} }
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field.full{grid-column:1/-1;}
+  label{font-size:11px;color:var(--text-dim);}
+  input[readonly]{ color:var(--text-dim); }
+  .form-actions{display:flex;gap:10px;margin-top:8px;}
+
+  /* rating stars */
+  .star-rating{position:relative;height:34px;display:inline-block;}
+  .star-row{ position:absolute; top:0; left:0; font-size:26px; letter-spacing:4px; line-height:34px; white-space:nowrap; user-select:none; pointer-events:none; }
+  .star-row-bg{color:var(--surface-2);}
+  .star-row-fg{color:var(--gold); overflow:hidden; width:0%; text-shadow:0 0 12px rgba(240,180,41,0.4);}
+  .star-rating input[type=range]{ position:absolute; top:0; left:0; width:100%; height:34px; opacity:0; cursor:pointer; margin:0; }
+  .rating-readout{ font-family:'Fraunces',serif; font-weight:700; color:var(--gold); font-size:16px; margin-top:4px; }
+
+  /* generic slider (episodes watched) */
+  input[type=range].plain-slider{
+    -webkit-appearance:none; width:100%; height:4px; border-radius:2px;
+    background:linear-gradient(to right, var(--gold) var(--fill,50%), var(--surface-2) var(--fill,50%)); margin:8px 0 2px;
+  }
+  input[type=range].plain-slider::-webkit-slider-thumb{ -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--gold); border:3px solid #1c1404; cursor:pointer; }
+  input[type=range].plain-slider::-moz-range-thumb{ width:18px; height:18px; border-radius:50%; background:var(--gold); border:3px solid #1c1404; cursor:pointer; }
+  .slider-value{font-family:'Fraunces',serif;font-weight:700;color:var(--gold);}
+
+  /* ---------- Recommendations ---------- */
+  .rec-row{ display:flex; gap:12px; overflow-x:auto; padding-bottom:6px; }
+  .rec-card{ flex:0 0 130px; background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:8px; }
+  .rec-card img{ width:100%; height:160px; object-fit:cover; border-radius:4px; background:var(--surface-2); }
+  .rec-card .rc-title{ font-size:12px; margin-top:6px; line-height:1.3; }
+  .rec-card .rc-meta{ font-size:10px; color:var(--text-dim); margin-top:2px; }
+  .rec-card button{ margin-top:6px; width:100%; font-size:11px; padding:5px; }
+
+  /* ---------- Leaderboard ---------- */
+  .leaderboard-wrap{ background:linear-gradient(180deg, var(--bg-alt), var(--bg)); border:1px solid var(--border); border-radius:12px; padding:24px clamp(16px,3vw,28px); }
+  .lb-head{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px; }
+  .lb-head h2{margin:0;}
+  .podium{ display:flex; align-items:flex-end; justify-content:center; gap:14px; margin:14px 0 22px; flex-wrap:wrap; }
+  .podium-card{ text-align:center; width:130px; cursor:pointer; transition:transform 0.15s; }
+  .podium-card:hover{ transform:translateY(-3px); }
+  .lb-row{ display:flex; align-items:center; gap:12px; padding:9px 4px; border-bottom:1px solid var(--border); font-size:13px; cursor:pointer; }
+  .lb-row:hover{ background:rgba(255,255,255,0.03); }
+
+  /* ---------- View-list modal ---------- */
+  .modal-overlay{ position:fixed; inset:0; background:rgba(6,7,12,0.72); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
+  .modal-box{ background:var(--surface); border:1px solid var(--border); border-radius:10px; max-width:640px; width:100%; max-height:85vh; overflow-y:auto; padding:24px clamp(16px,3vw,28px); }
+  .modal-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:4px; }
+  .modal-title{ font-family:'Fraunces',serif; font-weight:600; font-size:20px; }
+  .modal-stats{ color:var(--text-dim); font-size:12.5px; margin-bottom:16px; }
+  .podium-card .crown{font-size:26px; display:block; margin-bottom:4px;}
+  .podium-card .p-avatar{
+    width:64px;height:64px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;
+    margin:0 auto 8px; font-family:'Fraunces',serif; font-weight:700; font-size:22px; color:var(--text);
+    border:3px solid var(--border);
+  }
+  .podium-card.rank-1{ order:2; width:150px; }
+  .podium-card.rank-1 .p-avatar{ width:84px;height:84px; border-color:var(--gold); box-shadow:0 0 24px rgba(240,180,41,0.35); font-size:28px; }
+  .podium-card.rank-2{ order:1; }
+  .podium-card.rank-2 .p-avatar{ border-color:var(--silver); }
+  .podium-card.rank-3{ order:3; }
+  .podium-card.rank-3 .p-avatar{ border-color:var(--bronze); }
+  .p-title{ font-family:'Fraunces',serif; font-weight:700; font-size:13px; margin-bottom:2px; }
+  .rank-1 .p-title{ color:var(--gold); font-size:15px; }
+  .rank-2 .p-title{ color:var(--silver); }
+  .rank-3 .p-title{ color:var(--bronze); }
+  .p-name{ font-size:13px; font-weight:600; }
+  .p-stat{ font-size:11px; color:var(--text-dim); margin-top:2px; }
+  .lb-list{ border-top:1px solid var(--border); }
+  .lb-rank{ width:22px; color:var(--text-dim); font-family:'Fraunces',serif; }
+  .lb-name{ flex:1; }
+  .lb-you{ color:var(--gold); }
+  .lb-time{ color:var(--text-dim); font-size:12px; }
+  .your-rank{ font-size:12.5px; color:var(--text-dim); margin-top:12px; }
+
+  /* ---------- Ledger ---------- */
+  .ledger-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
+  .view-toggle{display:flex;gap:4px;}
+  .view-toggle button{ padding:6px 10px; font-size:12px; background:transparent; color:var(--text-dim); }
+  .view-toggle button.active{ color:var(--gold); border-color:var(--gold); }
+  .filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+  .filter-chip{ background:transparent; border:1px solid var(--border); color:var(--text-dim); font-size:12px; padding:5px 10px; border-radius:20px; }
+  .filter-chip.active{border-color:var(--gold);color:var(--gold);}
+
+  .ledger{border-top:1px solid var(--border);}
+  .entry-row{ display:flex; gap:14px; padding:16px 4px; border-bottom:1px solid var(--border); align-items:flex-start; }
+  .entry-row img{ width:52px;height:76px;object-fit:cover;border-radius:4px;flex-shrink:0;background:var(--surface-2); }
+  .entry-body{flex:1;min-width:0;}
+  .entry-title{font-family:'Fraunces',serif;font-size:16px;font-weight:600;}
+  .entry-meta{font-size:12px;color:var(--text-dim);margin-top:3px;}
+  .status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;position:relative;top:-1px;}
+  .status-completed{background:var(--teal);} .status-watching{background:var(--blue);} .status-dropped{background:var(--clay);} .status-onhold{background:var(--text-dim);}
+  .entry-progress{font-size:13px;margin-top:8px;}
+  .entry-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+  .tag{font-size:11px;color:var(--text-dim);border:1px solid var(--border);border-radius:20px;padding:2px 8px;}
+  .entry-actions{display:flex;gap:12px;margin-top:10px;}
+  .rating-stamp{ flex-shrink:0; width:46px;height:46px; border:2px solid var(--gold); border-radius:50%; display:flex;align-items:center;justify-content:center; transform:rotate(-6deg); font-family:'Fraunces',serif; font-weight:700; font-size:13px; color:var(--gold); margin-left:4px; }
+  .empty-state{ padding:20px 4px; color:var(--text-dim); font-size:14px; line-height:1.6; }
+  .status-msg{font-size:13px;color:var(--text-dim);margin-top:8px;min-height:16px;}
+
+  .ledger.grid-view{ display:grid; grid-template-columns:repeat(auto-fill,minmax(135px,1fr)); gap:16px; border-top:none; }
+  .ledger.grid-view .entry-row{ flex-direction:column; border:1px solid var(--border); border-radius:8px; padding:10px; position:relative; }
+  .ledger.grid-view .entry-row img{ width:100%; height:180px; }
+  .ledger.grid-view .rating-stamp{ position:absolute; top:16px; right:16px; background:var(--bg); }
+  .ledger.grid-view .entry-progress, .ledger.grid-view .entry-tags{ font-size:11px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">Watch <span>Log</span></div>
+  <div class="topbar-right hidden" id="topbarUserArea">
+    <span class="user-chip">Signed in as <b id="currentUserLabel"></b></span>
+    <button class="btn-secondary" id="exportBtn">Export</button>
+    <label class="btn-secondary" for="importFile" style="display:inline-block;">Import</label>
+    <input type="file" id="importFile" accept="application/json" class="hidden">
+    <button class="btn-secondary" id="logoutBtn">Log out</button>
+    <button class="btn-text danger" id="deleteProfileBtn">Delete profile</button>
+  </div>
+</div>
+
+<!-- ===================== LOGIN ===================== -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <h1>Enter the ledger</h1>
+    <p>Pick a username. Everyone's lists feed a shared, live leaderboard — no signup form, no email, just a name.</p>
+    <div class="login-field">
+      <label for="loginUsername">Username</label>
+      <input type="text" id="loginUsername" placeholder="e.g. mohammed_o">
+    </div>
+    <div class="login-field">
+      <label for="loginPin">PIN (optional, protects your name)</label>
+      <input type="password" id="loginPin" placeholder="4 digits, optional" maxlength="8">
+    </div>
+    <button class="btn-primary" id="loginBtn" style="width:100%;">Enter</button>
+    <div class="login-msg" id="loginMsg"></div>
+    <div class="login-note">This is a lightweight name tag, not real account security — anyone who knows your username and PIN could edit your list. Don't reuse a real password. Your list is visible to everyone who opens this page.</div>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div class="page hidden" id="appScreen">
+
+  <header class="hero">
+    <h1>My Watch Log</h1>
+    <p class="tagline">Every series, anime, and film you've started, finished, abandoned, or watched three times over.</p>
+    <div class="stats-row">
+      <div class="stat"><span class="stat-num" id="statTitles">0</span><span class="stat-label">titles logged</span></div>
+      <div class="stat"><span class="stat-num" id="statEpisodes">0</span><span class="stat-label">episodes/films watched</span></div>
+      <div class="stat"><span class="stat-num" id="statTime">0h</span><span class="stat-label">time spent</span></div>
+      <div class="stat"><span class="stat-num" id="statCompleted">0</span><span class="stat-label">finished</span></div>
+    </div>
+    <div class="cat-breakdown">
+      <span class="cat-pill"><span class="dot dot-series"></span>Series: <b id="catSeries">0</b></span>
+      <span class="cat-pill"><span class="dot dot-anime"></span>Anime: <b id="catAnime">0</b></span>
+      <span class="cat-pill"><span class="dot dot-movie"></span>Movies: <b id="catMovie">0</b></span>
+    </div>
+    <div id="storageWarning" class="storage-warning hidden"></div>
+  </header>
+
+  <section class="leaderboard-section">
+    <div class="leaderboard-wrap">
+      <div class="lb-head">
+        <h2>🏆 Kings of Watching</h2>
+        <div class="tab-row" id="lbTabs" style="margin:0;">
+          <button class="tab-chip active" data-metric="overall">Overall</button>
+          <button class="tab-chip" data-metric="series">Series</button>
+          <button class="tab-chip" data-metric="anime">Anime</button>
+          <button class="tab-chip" data-metric="movie">Movies</button>
+        </div>
+      </div>
+      <div id="podium" class="podium"></div>
+      <div id="lbList" class="lb-list"></div>
+      <div id="yourRank" class="your-rank"></div>
+    </div>
+  </section>
+
+  <section class="add-section">
+    <h2>Add a title</h2>
+    <div class="tab-row" id="categoryTabs">
+      <button class="tab-chip active" data-cat="series">TV Series</button>
+      <button class="tab-chip" data-cat="anime">Anime</button>
+      <button class="tab-chip" data-cat="movie">Movie</button>
+    </div>
+
+    <div id="searchBlock">
+      <div class="search-row">
+        <input type="text" id="searchInput" placeholder="Search a title…">
+        <button class="btn-primary" id="searchBtn">Search</button>
+      </div>
+      <div id="searchResults" class="search-results"></div>
+    </div>
+
+    <div id="movieManualPrompt" class="muted-msg hidden">
+      Movies aren't in the TV database this uses, so add the details yourself.
+      <div style="margin-top:8px;"><button class="btn-secondary" id="openMovieFormBtn">Add a movie</button></div>
+    </div>
+
+    <div id="statusMsg" class="status-msg"></div>
+
+    <div id="addForm" class="add-form hidden">
+      <div class="add-form-head">
+        <img id="afPoster" src="" alt="">
+        <div>
+          <div class="afh-title" id="afTitle" contenteditable="false"></div>
+          <div class="afh-meta" id="afMeta"></div>
+        </div>
+      </div>
+
+      <div id="movieUrlField" class="field full hidden" style="margin-bottom:14px;">
+        <label for="afPosterUrl">Poster image URL (optional)</label>
+        <input type="url" id="afPosterUrl" placeholder="https://…">
+      </div>
+
+      <div class="field-grid">
+        <div class="field">
+          <label for="afCategory">Category</label>
+          <select id="afCategory">
+            <option value="series">TV Series</option>
+            <option value="anime">Anime</option>
+            <option value="movie">Movie</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="afStatus">Status</label>
+          <select id="afStatus">
+            <option value="completed">Completed</option>
+            <option value="watching">Still watching</option>
+            <option value="dropped">Stopped / dropped</option>
+            <option value="onhold">On hold</option>
+          </select>
+        </div>
+        <div class="field full" id="totalEpisodesField">
+          <label for="afTotalEpisodes">Total episodes (auto-detected)</label>
+          <input type="number" id="afTotalEpisodes" min="0" value="0" readonly>
+        </div>
+        <div class="field full">
+          <label id="epWatchedLabel" for="afEpisodesWatched">Episodes watched: <span class="slider-value" id="epWatchedVal">0</span></label>
+          <input type="range" class="plain-slider" id="afEpisodesWatched" min="0" max="0" value="0" step="1">
+        </div>
+        <div class="field">
+          <label for="afRuntime">Avg. length per episode/film (min)</label>
+          <input type="number" id="afRuntime" min="1" value="40">
+        </div>
+        <div class="field">
+          <label for="afRewatch">Times watched through</label>
+          <input type="number" id="afRewatch" min="1" value="1">
+        </div>
+        <div class="field full">
+          <label>My rating</label>
+          <div class="star-rating" id="ratingWidget">
+            <div class="star-row star-row-bg">★★★★★★★★★★</div>
+            <div class="star-row star-row-fg" id="starFg">★★★★★★★★★★</div>
+            <input type="range" id="afRating" min="0" max="10" step="0.1" value="7">
+          </div>
+          <div class="rating-readout"><span id="ratingVal">7.0</span> / 10</div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" id="saveEntryBtn">Save to log</button>
+        <button class="btn-secondary" id="cancelFormBtn">Cancel</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="rec-section">
+    <h2>Recommended for you</h2>
+    <div class="muted-msg">Based on the genres you've rated highest.</div>
+    <div style="margin:10px 0;"><button class="btn-secondary" id="getRecsBtn">Get recommendations</button></div>
+    <div id="recResults" class="rec-row"></div>
+  </section>
+
+  <section class="ledger-section">
+    <div class="ledger-header">
+      <h2>The ledger</h2>
+      <div class="view-toggle" id="viewToggle">
+        <button class="active" data-view="list">☰ List</button>
+        <button data-view="grid">▦ Grid</button>
+      </div>
+    </div>
+    <div class="tab-row" id="catFilterTabs">
+      <button class="tab-chip active" data-catfilter="all">All</button>
+      <button class="tab-chip" data-catfilter="series">Series</button>
+      <button class="tab-chip" data-catfilter="anime">Anime</button>
+      <button class="tab-chip" data-catfilter="movie">Movies</button>
+    </div>
+    <div class="filter-row" id="filterRow">
+      <button class="filter-chip active" data-filter="all">All statuses</button>
+      <button class="filter-chip" data-filter="completed">Completed</button>
+      <button class="filter-chip" data-filter="watching">Watching</button>
+      <button class="filter-chip" data-filter="dropped">Dropped</button>
+      <button class="filter-chip" data-filter="onhold">On hold</button>
+    </div>
+    <div id="ledgerContainer"></div>
+  </section>
+
+</div>
+
+<div class="modal-overlay hidden" id="viewListModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title" id="modalUserTitle"></div>
+      <button class="btn-secondary" id="closeViewModal">Close</button>
+    </div>
+    <div class="modal-stats" id="modalUserStats"></div>
+    <div id="modalLedger"></div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="deleteConfirmModal">
+  <div class="modal-box" style="max-width:440px;">
+    <div class="modal-title">Delete your profile?</div>
+    <p style="color:var(--text-dim);font-size:13px;line-height:1.6;margin:10px 0 16px;">This permanently deletes your username, PIN, and your entire watch list — including your spot on the leaderboard. This can't be undone.</p>
+    <div class="storage-warning" style="margin-top:0;margin-bottom:18px;">Consider exporting a backup first. Once deleted, this data can't be recovered.</div>
+    <div class="status-msg" id="deleteStatusMsg"></div>
+    <div class="form-actions" style="flex-wrap:wrap;">
+      <button class="btn-secondary" id="exportBeforeDeleteBtn">Export first</button>
+      <button class="btn-primary" style="background:var(--clay);color:#fff;" id="confirmDeleteBtn">Delete permanently</button>
+      <button class="btn-secondary" id="cancelDeleteBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// FIREBASE SETUP — paste your Realtime Database URL below.
+// It looks like: https://YOUR-PROJECT-ID-default-rtdb.firebaseio.com
+// (or …-default-rtdb.REGION.firebasedatabase.app for some regions)
+// ============================================================
+const FIREBASE_DB_URL = "https://watchlog-699f6-default-rtdb.firebaseio.com";
+
+async function dbGet(path){
+  const res = await fetch(`${FIREBASE_DB_URL}/${path}.json`);
+  if(!res.ok) throw new Error('Firebase read failed (' + res.status + ')');
+  return await res.json(); // null if nothing stored there yet
+}
+async function dbSet(path, value){
+  const res = await fetch(`${FIREBASE_DB_URL}/${path}.json`, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(value)
+  });
+  if(!res.ok) throw new Error('Firebase write failed (' + res.status + ')');
+  return await res.json();
+}
+
+const ACCOUNT_KEY = 'watchlog-account'; // kept in this browser only (localStorage), not in Firebase
+const INDEX_PATH = 'leaderboardIndex';
+const entriesPath = u => `entries/${encodeURIComponent(u.toLowerCase())}`;
+
+function getAccount(){
+  try{ const raw = localStorage.getItem(ACCOUNT_KEY); return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
+}
+function setAccount(obj){ try{ localStorage.setItem(ACCOUNT_KEY, JSON.stringify(obj)); }catch(e){} }
+function clearAccount(){ try{ localStorage.removeItem(ACCOUNT_KEY); }catch(e){} }
+
+let currentUser = null, currentPin = '';
+let entries = [];
+let usersIndex = [];
+let viewMode = 'list';
+let lbMetric = 'overall';
+let currentStatusFilter = 'all', currentCatFilter = 'all';
+let addCategory = 'series';
+let pendingShow = null, editingId = null;
+let showsPool = [];
+
+const el = id => document.getElementById(id);
+const statusLabels = {
+  series: {completed:'Completed', watching:'Watching', dropped:'Dropped', onhold:'On hold'},
+  anime:  {completed:'Completed', watching:'Watching', dropped:'Dropped', onhold:'On hold'},
+  movie:  {completed:'Watched', watching:'Watching', dropped:"Didn't finish", onhold:'On hold'}
+};
+const catNames = {series:'TV Series', anime:'Anime', movie:'Movie'};
+const kingTitles = {overall:'King of Watching', series:'King of Series', anime:'King of Anime', movie:'King of Movies'};
+
+function escapeHtml(str){ const d=document.createElement('div'); d.textContent=str||''; return d.innerHTML; }
+function storageAvailable(){
+  return typeof FIREBASE_DB_URL === 'string'
+    && FIREBASE_DB_URL.startsWith('https://')
+    && !FIREBASE_DB_URL.includes('PASTE_YOUR_FIREBASE_DATABASE_URL_HERE');
+}
+function showStorageWarning(msg){ const w=el('storageWarning'); w.textContent=msg; w.classList.remove('hidden'); }
+function clearStorageWarning(){ el('storageWarning').classList.add('hidden'); }
+function setStatus(msg){ el('statusMsg').textContent = msg || ''; }
+function setLoginMsg(msg){ el('loginMsg').textContent = msg || ''; }
+
+function fmtTime(mins){
+  if(mins < 60) return `${Math.round(mins)}m`;
+  const totalHours = mins/60;
+  if(totalHours < 24) return `${totalHours.toFixed(1)}h`;
+  const days = Math.floor(mins/1440), hours = Math.round((mins%1440)/60);
+  return `${days}d ${hours}h`;
+}
+
+// ================= INIT / LOGIN =================
+async function init(){
+  if(!storageAvailable()){
+    showLogin();
+    setLoginMsg('Storage isn\'t configured yet — a Firebase Realtime Database URL needs to be added in the code (FIREBASE_DB_URL) before accounts and the leaderboard will work.');
+    return;
+  }
+  const saved = getAccount();
+  if(saved && saved.username){
+    currentUser = saved.username; currentPin = saved.pin || '';
+    await loadMyEntries();
+    await showApp();
+    return;
+  }
+  showLogin();
+}
+
+function showLogin(){
+  el('loginScreen').classList.remove('hidden');
+  el('appScreen').classList.add('hidden');
+  el('topbarUserArea').classList.add('hidden');
+}
+
+async function showApp(){
+  el('loginScreen').classList.add('hidden');
+  el('appScreen').classList.remove('hidden');
+  el('topbarUserArea').classList.remove('hidden');
+  el('currentUserLabel').textContent = currentUser;
+  clearStorageWarning();
+  sizeStarWidget();
+  await loadLeaderboard();
+  render();
+}
+
+el('loginBtn').addEventListener('click', async () => {
+  const uname = el('loginUsername').value.trim();
+  const pin = el('loginPin').value.trim();
+  if(!uname){ setLoginMsg('Pick a username first.'); return; }
+  if(!/^[a-zA-Z0-9_\- ]{2,24}$/.test(uname)){ setLoginMsg('Use 2–24 letters, numbers, spaces, - or _.'); return; }
+  setLoginMsg('Checking…');
+  try{
+    const idx = await dbGet(INDEX_PATH);
+    usersIndex = Array.isArray(idx) ? idx : [];
+  }catch(e){ setLoginMsg('Couldn\'t reach the database — check your connection and the FIREBASE_DB_URL setup.'); return; }
+
+  const existing = usersIndex.find(u => u.username.toLowerCase() === uname.toLowerCase());
+  if(existing){
+    if(existing.pin && existing.pin !== pin){
+      setLoginMsg('That username is taken and the PIN doesn\'t match.');
+      return;
+    }
+  }else{
+    usersIndex.push({
+      username: uname, pin: pin || '',
+      totalTitles:0, totalMinutes:0, totalEpisodesWatched:0,
+      series:{titles:0,minutes:0}, anime:{titles:0,minutes:0}, movie:{titles:0,minutes:0},
+      updatedAt: Date.now()
+    });
+    try{ await dbSet(INDEX_PATH, usersIndex); }catch(e){}
+  }
+
+  currentUser = uname; currentPin = pin;
+  setAccount({username:uname, pin});
+  setLoginMsg('');
+  await loadMyEntries();
+  await showApp();
+});
+
+el('logoutBtn').addEventListener('click', async () => {
+  clearAccount();
+  currentUser = null; entries = [];
+  el('loginUsername').value=''; el('loginPin').value='';
+  showLogin();
+});
+
+// ================= DELETE PROFILE =================
+el('deleteProfileBtn').addEventListener('click', () => {
+  el('deleteStatusMsg').textContent = '';
+  el('confirmDeleteBtn').disabled = false;
+  el('confirmDeleteBtn').textContent = 'Delete permanently';
+  el('deleteConfirmModal').classList.remove('hidden');
+});
+el('cancelDeleteBtn').addEventListener('click', () => el('deleteConfirmModal').classList.add('hidden'));
+el('deleteConfirmModal').addEventListener('click', e => { if(e.target.id === 'deleteConfirmModal') el('deleteConfirmModal').classList.add('hidden'); });
+el('exportBeforeDeleteBtn').addEventListener('click', () => el('exportBtn').click());
+
+el('confirmDeleteBtn').addEventListener('click', async () => {
+  if(!currentUser) return;
+  el('confirmDeleteBtn').disabled = true;
+  el('confirmDeleteBtn').textContent = 'Deleting…';
+  el('deleteStatusMsg').textContent = '';
+  try{
+    await dbSet(entriesPath(currentUser), null);
+    let idx = [];
+    try{ const res = await dbGet(INDEX_PATH); idx = Array.isArray(res) ? res : []; }catch(e){}
+    idx = idx.filter(u => u.username.toLowerCase() !== currentUser.toLowerCase());
+    await dbSet(INDEX_PATH, idx);
+  }catch(e){
+    el('deleteStatusMsg').textContent = 'Something went wrong deleting your profile — check your connection and try again.';
+    el('confirmDeleteBtn').disabled = false;
+    el('confirmDeleteBtn').textContent = 'Delete permanently';
+    return;
+  }
+  clearAccount();
+  currentUser = null; entries = [];
+  el('deleteConfirmModal').classList.add('hidden');
+  el('loginUsername').value=''; el('loginPin').value='';
+  showLogin();
+  setLoginMsg('Your profile has been deleted.');
+});
+
+// ================= MY ENTRIES (shared, cloud) =================
+async function loadMyEntries(){
+  try{
+    const res = await dbGet(entriesPath(currentUser));
+    entries = Array.isArray(res) ? res : [];
+    clearStorageWarning();
+  }catch(e){
+    entries = [];
+    showStorageWarning('Couldn\'t load your saved list from the database. Starting empty — if you have an export file, use Import to restore it.');
+  }
+}
+
+function computeSummary(list){
+  const catStat = cat => {
+    const l = list.filter(e => e.category===cat);
+    return { titles:l.length, minutes: l.reduce((a,e)=>a+e.episodesWatched*e.rewatch*e.avgRuntime,0) };
+  };
+  return {
+    totalTitles: list.length,
+    totalMinutes: list.reduce((a,e)=>a+e.episodesWatched*e.rewatch*e.avgRuntime,0),
+    totalEpisodesWatched: list.reduce((a,e)=>a+e.episodesWatched*e.rewatch,0),
+    series: catStat('series'), anime: catStat('anime'), movie: catStat('movie')
+  };
+}
+
+async function saveMyEntries(){
+  if(!currentUser) return;
+  try{
+    await dbSet(entriesPath(currentUser), entries);
+    clearStorageWarning();
+  }catch(e){
+    showStorageWarning('Couldn\'t save that last change to the database. Use Export to back up what you have now.');
+    return;
+  }
+  try{
+    const idx = await dbGet(INDEX_PATH);
+    usersIndex = Array.isArray(idx) ? idx : [];
+  }catch(e){ /* keep existing usersIndex */ }
+  const summary = computeSummary(entries);
+  const i = usersIndex.findIndex(u => u.username.toLowerCase() === currentUser.toLowerCase());
+  const rec = { username: currentUser, pin: (i>=0 ? usersIndex[i].pin : currentPin) || '', ...summary, updatedAt: Date.now() };
+  if(i>=0) usersIndex[i] = rec; else usersIndex.push(rec);
+  try{ await dbSet(INDEX_PATH, usersIndex); }catch(e){}
+  await loadLeaderboard();
+}
+
+// ================= BACKUP: EXPORT / IMPORT =================
+el('exportBtn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(entries, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `watch-log-${currentUser || 'backup'}-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+});
+el('importFile').addEventListener('change', async (e) => {
+  const file = e.target.files[0]; if(!file) return;
+  try{
+    const text = await file.text();
+    const imported = JSON.parse(text);
+    if(!Array.isArray(imported)) throw new Error('not an array');
+    const existingIds = new Set(entries.map(x => x.id));
+    entries = entries.concat(imported.filter(x => x && x.id && !existingIds.has(x.id)));
+    await saveMyEntries();
+    render();
+    setStatus(`Imported ${imported.length} entries.`);
+  }catch(err){ setStatus('That file could not be read as a backup.'); }
+  e.target.value = '';
+});
+
+// ================= LEADERBOARD =================
+async function loadLeaderboard(){
+  try{
+    const idx = await dbGet(INDEX_PATH);
+    usersIndex = Array.isArray(idx) ? idx : [];
+  }catch(e){ /* keep last known */ }
+  renderLeaderboard();
+}
+
+el('lbTabs').addEventListener('click', e => {
+  const btn = e.target.closest('.tab-chip'); if(!btn) return;
+  lbMetric = btn.dataset.metric;
+  document.querySelectorAll('#lbTabs .tab-chip').forEach(c => c.classList.toggle('active', c===btn));
+  renderLeaderboard();
+});
+
+function metricValue(u){ return lbMetric==='overall' ? (u.totalMinutes||0) : ((u[lbMetric]&&u[lbMetric].minutes)||0); }
+function metricTitles(u){ return lbMetric==='overall' ? (u.totalTitles||0) : ((u[lbMetric]&&u[lbMetric].titles)||0); }
+
+function renderLeaderboard(){
+  const ranked = usersIndex.filter(u => metricValue(u) > 0).sort((a,b) => metricValue(b) - metricValue(a));
+  if(!ranked.length){
+    el('podium').innerHTML = `<div class="muted-msg">No one has logged anything in this category yet — be the first.</div>`;
+    el('lbList').innerHTML = ''; el('yourRank').textContent = '';
+    return;
+  }
+  const top3 = ranked.slice(0,3);
+  const crowns = ['👑','🥈','🥉'];
+  const avatarLetter = n => (n[0]||'?').toUpperCase();
+  el('podium').innerHTML = top3.map((u,i) => `
+    <div class="podium-card rank-${i+1}" data-username="${escapeHtml(u.username)}">
+      <span class="crown">${crowns[i]}</span>
+      <div class="p-avatar">${avatarLetter(u.username)}</div>
+      <div class="p-title">${i===0 ? kingTitles[lbMetric] : (i===1 ? '2nd place' : '3rd place')}</div>
+      <div class="p-name">${escapeHtml(u.username)}</div>
+      <div class="p-stat">${fmtTime(metricValue(u))} · ${metricTitles(u)} titles</div>
+    </div>`).join('');
+  document.querySelectorAll('#podium .podium-card').forEach(card => {
+    card.addEventListener('click', () => openUserListModal(card.dataset.username));
+  });
+
+  const rest = ranked.slice(3, 15);
+  el('lbList').innerHTML = rest.map((u,i) => `
+    <div class="lb-row" data-username="${escapeHtml(u.username)}">
+      <span class="lb-rank">${i+4}</span>
+      <span class="lb-name ${u.username.toLowerCase()===((currentUser||'').toLowerCase())?'lb-you':''}">${escapeHtml(u.username)}</span>
+      <span class="lb-time">${fmtTime(metricValue(u))} · ${metricTitles(u)} titles</span>
+    </div>`).join('');
+  document.querySelectorAll('#lbList .lb-row').forEach(row => {
+    row.addEventListener('click', () => openUserListModal(row.dataset.username));
+  });
+
+  const myRank = ranked.findIndex(u => u.username.toLowerCase() === (currentUser||'').toLowerCase());
+  el('yourRank').textContent = myRank >= 0
+    ? (myRank < 3 ? `You're on the podium — rank #${myRank+1}!` : `You're ranked #${myRank+1} of ${ranked.length}.`)
+    : (currentUser ? `You're not ranked here yet — log something in this category.` : '');
+}
+
+// ================= ADD FORM: category tabs =================
+el('categoryTabs').addEventListener('click', e => {
+  const btn = e.target.closest('.tab-chip'); if(!btn) return;
+  addCategory = btn.dataset.cat;
+  document.querySelectorAll('#categoryTabs .tab-chip').forEach(c => c.classList.toggle('active', c===btn));
+  hideForm(); el('searchResults').innerHTML=''; el('searchInput').value=''; setStatus('');
+  if(addCategory === 'movie'){
+    el('searchBlock').classList.add('hidden'); el('movieManualPrompt').classList.remove('hidden');
+  }else{
+    el('searchBlock').classList.remove('hidden'); el('movieManualPrompt').classList.add('hidden');
+  }
+});
+el('openMovieFormBtn').addEventListener('click', () => openManualMovieForm());
+
+// ================= TVMaze search =================
+el('searchBtn').addEventListener('click', doSearch);
+el('searchInput').addEventListener('keydown', e => { if(e.key==='Enter') doSearch(); });
+
+async function doSearch(){
+  const q = el('searchInput').value.trim();
+  el('searchResults').innerHTML=''; hideForm();
+  if(!q) return;
+  setStatus('Searching…');
+  try{
+    const res = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(q)}`);
+    if(!res.ok) throw new Error('bad response');
+    const data = await res.json();
+    setStatus('');
+    if(!data.length){ el('searchResults').innerHTML = `<div class="muted-msg">No matches found.</div>`; return; }
+    el('searchResults').innerHTML = data.slice(0,8).map((d,i) => {
+      const s = d.show; const img = s.image ? s.image.medium : '';
+      const year = s.premiered ? s.premiered.slice(0,4) : '—';
+      return `<div class="result-row" data-idx="${i}">
+        <img src="${img}" alt="">
+        <div><div class="r-title">${escapeHtml(s.name)}</div>
+        <div class="r-meta">${year} · ${(s.genres||[]).slice(0,2).join(', ') || 'Unknown genre'}</div></div>
+      </div>`;
+    }).join('');
+    document.querySelectorAll('.result-row').forEach(row => row.addEventListener('click', () => selectShow(data[+row.dataset.idx].show)));
+  }catch(e){ setStatus('Search failed — check your connection and try again.'); }
+}
+
+async function selectShow(show){
+  setStatus('Counting episodes…');
+  let totalEpisodes = 0, avgRuntime = show.runtime || show.averageRuntime || 40;
+  try{
+    const res = await fetch(`https://api.tvmaze.com/shows/${show.id}/episodes`);
+    if(res.ok){
+      const eps = await res.json();
+      totalEpisodes = eps.length;
+      const timed = eps.filter(e => e.runtime);
+      if(timed.length) avgRuntime = Math.round(timed.reduce((a,e)=>a+e.runtime,0) / timed.length);
+    }
+  }catch(e){}
+  setStatus('');
+  const inferredCat = (show.genres||[]).includes('Anime') ? 'anime' : addCategory;
+  pendingShow = { tvmazeId:show.id, name:show.name, poster: show.image ? (show.image.original||show.image.medium):'',
+    year: show.premiered ? show.premiered.slice(0,4):'—', genres: show.genres||[], category:inferredCat };
+  editingId = null;
+  openForm(pendingShow, totalEpisodes, avgRuntime);
+}
+
+function openManualMovieForm(){
+  pendingShow = { tvmazeId:null, name:'', poster:'', year:'—', genres:[], category:'movie' };
+  editingId = null;
+  openForm(pendingShow, 1, 110);
+}
+
+function openForm(show, totalEpisodes, avgRuntime){
+  const isMovie = show.category === 'movie';
+  el('afPoster').src = show.poster || ''; el('afPoster').style.display = show.poster ? 'block':'none';
+  el('afTitle').textContent = show.name || 'Untitled';
+  el('afTitle').setAttribute('contenteditable', isMovie ? 'true':'false');
+  el('afMeta').textContent = isMovie ? 'Enter the details below' : `${show.year} · ${(show.genres||[]).slice(0,3).join(', ')||'Unknown genre'}`;
+  el('afCategory').value = show.category;
+  el('movieUrlField').classList.toggle('hidden', !isMovie);
+  el('afPosterUrl').value = show.poster || '';
+  el('totalEpisodesField').classList.toggle('hidden', isMovie);
+  el('epWatchedLabel').firstChild.textContent = isMovie ? 'Watched: ' : 'Episodes watched: ';
+  el('afTotalEpisodes').value = totalEpisodes;
+  el('afEpisodesWatched').max = isMovie ? 1 : totalEpisodes;
+  el('afEpisodesWatched').value = isMovie ? 1 : totalEpisodes;
+  el('epWatchedVal').textContent = el('afEpisodesWatched').value;
+  updatePlainSliderFill(el('afEpisodesWatched'));
+  el('afRuntime').value = avgRuntime;
+  el('afRewatch').value = 1;
+  el('afStatus').value = 'completed';
+  setRating(7.0);
+  el('addForm').classList.remove('hidden');
+  el('addForm').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+function hideForm(){ el('addForm').classList.add('hidden'); }
+el('cancelFormBtn').addEventListener('click', () => { hideForm(); pendingShow=null; editingId=null; });
+
+el('afStatus').addEventListener('change', () => {
+  const isMovie = el('afCategory').value === 'movie';
+  if(el('afStatus').value === 'completed'){
+    const max = isMovie ? 1 : (parseInt(el('afTotalEpisodes').value)||0);
+    el('afEpisodesWatched').value = max; el('epWatchedVal').textContent = max;
+    updatePlainSliderFill(el('afEpisodesWatched'));
+  }
+});
+el('afCategory').addEventListener('change', () => {
+  const isMovie = el('afCategory').value === 'movie';
+  el('totalEpisodesField').classList.toggle('hidden', isMovie);
+  el('movieUrlField').classList.toggle('hidden', !isMovie);
+  if(isMovie){
+    el('afEpisodesWatched').max = 1;
+    if(parseFloat(el('afEpisodesWatched').value) > 1) el('afEpisodesWatched').value = 1;
+    el('epWatchedVal').textContent = el('afEpisodesWatched').value;
+    updatePlainSliderFill(el('afEpisodesWatched'));
+  }
+});
+
+// ---- sliders ----
+function updatePlainSliderFill(input){
+  const min=parseFloat(input.min)||0, max=parseFloat(input.max)||100, val=parseFloat(input.value)||0;
+  input.style.setProperty('--fill', (max>min ? ((val-min)/(max-min))*100 : 0) + '%');
+}
+el('afEpisodesWatched').addEventListener('input', () => {
+  el('epWatchedVal').textContent = el('afEpisodesWatched').value;
+  updatePlainSliderFill(el('afEpisodesWatched'));
+});
+
+function sizeStarWidget(){
+  const bg = document.querySelector('#ratingWidget .star-row-bg');
+  if(!bg) return;
+  const w = bg.offsetWidth || 260;
+  el('ratingWidget').style.width = w + 'px';
+}
+function setRating(val){
+  el('afRating').value = val;
+  el('ratingVal').textContent = val.toFixed(1);
+  el('starFg').style.width = (val/10*100) + '%';
+}
+el('afRating').addEventListener('input', () => setRating(parseFloat(el('afRating').value)));
+window.addEventListener('resize', sizeStarWidget);
+
+el('saveEntryBtn').addEventListener('click', async () => {
+  if(!pendingShow) return;
+  const category = el('afCategory').value;
+  const isMovie = category === 'movie';
+  const name = isMovie ? (el('afTitle').textContent.trim() || 'Untitled movie') : pendingShow.name;
+  if(isMovie && !name){ setStatus('Give the movie a title first.'); return; }
+  const entry = {
+    id: editingId || (Date.now() + '-' + Math.random().toString(36).slice(2,7)),
+    tvmazeId: pendingShow.tvmazeId, name,
+    poster: isMovie ? (el('afPosterUrl').value.trim()||'') : pendingShow.poster,
+    year: pendingShow.year, genres: pendingShow.genres, category,
+    status: el('afStatus').value,
+    rating: Math.round(parseFloat(el('afRating').value)*10)/10 || 0,
+    episodesWatched: Math.max(0, parseInt(el('afEpisodesWatched').value)||0),
+    totalEpisodes: isMovie ? 1 : Math.max(0, parseInt(el('afTotalEpisodes').value)||0),
+    avgRuntime: Math.max(1, parseInt(el('afRuntime').value)||40),
+    rewatch: Math.max(1, parseInt(el('afRewatch').value)||1)
+  };
+  if(editingId) entries = entries.map(e => e.id===editingId ? entry : e);
+  else entries.push(entry);
+  await saveMyEntries();
+  hideForm(); pendingShow=null; editingId=null;
+  el('searchInput').value=''; el('searchResults').innerHTML='';
+  render();
+});
+
+// ================= RECOMMENDATIONS =================
+el('getRecsBtn').addEventListener('click', getRecommendations);
+async function getRecommendations(){
+  const rated = entries.filter(e => e.category!=='movie' && e.rating>0);
+  if(!rated.length){ el('recResults').innerHTML = `<div class="muted-msg">Rate a few series or anime first, then check back here.</div>`; return; }
+  el('recResults').innerHTML = `<div class="muted-msg">Finding shows you might like…</div>`;
+  const genreScore = {};
+  rated.forEach(e => (e.genres||[]).forEach(g => { genreScore[g]=(genreScore[g]||0)+e.rating; }));
+  const topGenres = Object.entries(genreScore).sort((a,b)=>b[1]-a[1]).slice(0,4).map(x=>x[0]);
+  if(!topGenres.length){ el('recResults').innerHTML = `<div class="muted-msg">Not enough genre info yet.</div>`; return; }
+  try{
+    if(!showsPool.length){
+      const pages = await Promise.all([0,1].map(p => fetch(`https://api.tvmaze.com/shows?page=${p}`).then(r=>r.ok?r.json():[])));
+      showsPool = pages.flat();
+    }
+    const ownedIds = new Set(entries.map(e=>e.tvmazeId).filter(Boolean));
+    const scored = showsPool
+      .filter(s => s.genres && s.genres.length && !ownedIds.has(s.id) && s.rating && s.rating.average)
+      .map(s => ({ show:s, match: s.genres.filter(g=>topGenres.includes(g)).length }))
+      .filter(s => s.match>0)
+      .sort((a,b) => (b.match-a.match) || (b.show.rating.average-a.show.rating.average))
+      .slice(0,8);
+    if(!scored.length){ el('recResults').innerHTML = `<div class="muted-msg">Couldn't find fresh matches right now.</div>`; return; }
+    el('recResults').innerHTML = scored.map(({show}) => `
+      <div class="rec-card" data-id="${show.id}">
+        <img src="${show.image?show.image.medium:''}" alt="">
+        <div class="rc-title">${escapeHtml(show.name)}</div>
+        <div class="rc-meta">${(show.genres||[]).slice(0,2).join(', ')} · ★ ${show.rating.average}</div>
+        <button class="btn-secondary add-rec-btn">Add to log</button>
+      </div>`).join('');
+    document.querySelectorAll('.add-rec-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const id = +e.target.closest('.rec-card').dataset.id;
+        const show = scored.find(s=>s.show.id===id).show;
+        window.scrollTo({top:0, behavior:'smooth'});
+        selectShow(show);
+      });
+    });
+  }catch(e){ el('recResults').innerHTML = `<div class="muted-msg">Couldn't load recommendations — check your connection.</div>`; }
+}
+
+// ================= LEDGER: filters + view toggle =================
+el('filterRow').addEventListener('click', e => {
+  const btn = e.target.closest('.filter-chip'); if(!btn) return;
+  currentStatusFilter = btn.dataset.filter;
+  document.querySelectorAll('#filterRow .filter-chip').forEach(c => c.classList.toggle('active', c===btn));
+  render();
+});
+el('catFilterTabs').addEventListener('click', e => {
+  const btn = e.target.closest('.tab-chip'); if(!btn) return;
+  currentCatFilter = btn.dataset.catfilter;
+  document.querySelectorAll('#catFilterTabs .tab-chip').forEach(c => c.classList.toggle('active', c===btn));
+  render();
+});
+el('viewToggle').addEventListener('click', e => {
+  const btn = e.target.closest('button'); if(!btn) return;
+  viewMode = btn.dataset.view;
+  document.querySelectorAll('#viewToggle button').forEach(b => b.classList.toggle('active', b===btn));
+  render();
+});
+
+function entryRowHtml(entry, readOnly){
+  const mins = entry.episodesWatched * entry.rewatch * entry.avgRuntime;
+  const labels = statusLabels[entry.category] || statusLabels.series;
+  const rewatchTag = entry.rewatch > 1 ? `<span class="tag">watched ${entry.rewatch}×</span>` : '';
+  const progress = entry.category === 'movie'
+    ? `${entry.rewatch}× watched · ${fmtTime(mins)}`
+    : `${entry.episodesWatched}/${entry.totalEpisodes||'?'} episodes · ${fmtTime(mins)}`;
+  return `<div class="entry-row" data-id="${entry.id}">
+    ${entry.poster ? `<img src="${entry.poster}" alt="">` : `<div style="width:52px;height:76px;background:var(--surface-2);border-radius:4px;flex-shrink:0;"></div>`}
+    <div class="entry-body">
+      <div class="entry-title">${escapeHtml(entry.name)}</div>
+      <div class="entry-meta"><span class="status-dot status-${entry.status}"></span>${labels[entry.status]} · ${entry.year}</div>
+      <div class="entry-progress">${progress}</div>
+      <div class="entry-tags">${rewatchTag}${(entry.genres||[]).slice(0,2).map(g=>`<span class="tag">${escapeHtml(g)}</span>`).join('')}</div>
+      ${readOnly ? '' : `<div class="entry-actions">
+        <button class="btn-text edit-btn">Edit</button>
+        <button class="btn-text danger remove-btn">Remove</button>
+      </div>`}
+    </div>
+    <div class="rating-stamp">${entry.rating.toFixed(1)}</div>
+  </div>`;
+}
+
+// ================= VIEW SOMEONE ELSE'S LIST =================
+el('closeViewModal').addEventListener('click', () => el('viewListModal').classList.add('hidden'));
+el('viewListModal').addEventListener('click', e => { if(e.target.id === 'viewListModal') el('viewListModal').classList.add('hidden'); });
+
+async function openUserListModal(username){
+  el('modalUserTitle').textContent = `${username}'s list`;
+  el('modalUserStats').textContent = 'Loading…';
+  el('modalLedger').innerHTML = '';
+  el('viewListModal').classList.remove('hidden');
+  let list = [];
+  try{
+    const res = await dbGet(entriesPath(username));
+    list = Array.isArray(res) ? res : [];
+  }catch(e){
+    el('modalUserStats').textContent = 'Couldn\'t load this list — check your connection and try again.';
+    return;
+  }
+  if(!list.length){
+    el('modalUserStats').textContent = 'No titles logged yet.';
+    return;
+  }
+  const totalMinutes = list.reduce((a,e)=>a+e.episodesWatched*e.rewatch*e.avgRuntime,0);
+  const totalCompleted = list.filter(e=>e.status==='completed').length;
+  el('modalUserStats').textContent = `${list.length} titles · ${fmtTime(totalMinutes)} watched · ${totalCompleted} finished`;
+  const cats = ['series','anime','movie'];
+  let html = '';
+  cats.forEach(cat => {
+    const catList = list.filter(e=>e.category===cat).sort((a,b)=>b.rating-a.rating);
+    if(!catList.length) return;
+    html += `<h3 class="sub-h"><span class="dot dot-${cat}"></span>${catNames[cat]}</h3><div class="ledger">${catList.map(e=>entryRowHtml(e,true)).join('')}</div>`;
+  });
+  el('modalLedger').innerHTML = html;
+}
+
+function render(){
+  const totalTitles = entries.length;
+  const totalEpisodesWatched = entries.reduce((a,e)=>a+e.episodesWatched*e.rewatch,0);
+  const totalMinutes = entries.reduce((a,e)=>a+e.episodesWatched*e.rewatch*e.avgRuntime,0);
+  const totalCompleted = entries.filter(e=>e.status==='completed').length;
+  el('statTitles').textContent = totalTitles;
+  el('statEpisodes').textContent = totalEpisodesWatched;
+  el('statTime').textContent = fmtTime(totalMinutes);
+  el('statCompleted').textContent = totalCompleted;
+  el('catSeries').textContent = entries.filter(e=>e.category==='series').length;
+  el('catAnime').textContent = entries.filter(e=>e.category==='anime').length;
+  el('catMovie').textContent = entries.filter(e=>e.category==='movie').length;
+
+  const byStatus = e => currentStatusFilter==='all' || e.status===currentStatusFilter;
+  const container = el('ledgerContainer');
+  const gridClass = viewMode==='grid' ? ' grid-view' : '';
+
+  if(currentCatFilter !== 'all'){
+    const list = entries.filter(e=>e.category===currentCatFilter).filter(byStatus).sort((a,b)=>b.rating-a.rating);
+    container.innerHTML = list.length
+      ? `<div class="ledger${gridClass}">${list.map(entryRowHtml).join('')}</div>`
+      : `<div class="empty-state">Nothing here yet.</div>`;
+  }else{
+    const cats = ['series','anime','movie'];
+    let html = '';
+    cats.forEach(cat => {
+      const list = entries.filter(e=>e.category===cat).filter(byStatus).sort((a,b)=>b.rating-a.rating);
+      if(!list.length) return;
+      html += `<h3 class="sub-h"><span class="dot dot-${cat}"></span>${catNames[cat]}</h3><div class="ledger${gridClass}">${list.map(entryRowHtml).join('')}</div>`;
+    });
+    container.innerHTML = html || `<div class="empty-state">Nothing logged yet — add a title above to start your ledger.</div>`;
+  }
+
+  container.querySelectorAll('.remove-btn').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      const id = e.target.closest('.entry-row').dataset.id;
+      entries = entries.filter(x=>x.id!==id);
+      await saveMyEntries();
+      render();
+    });
+  });
+  container.querySelectorAll('.edit-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const id = e.target.closest('.entry-row').dataset.id;
+      const entry = entries.find(x=>x.id===id); if(!entry) return;
+      pendingShow = { tvmazeId:entry.tvmazeId, name:entry.name, poster:entry.poster, year:entry.year, genres:entry.genres, category:entry.category };
+      editingId = id;
+      openForm(pendingShow, entry.totalEpisodes, entry.avgRuntime);
+      el('afStatus').value = entry.status;
+      setRating(entry.rating);
+      el('afEpisodesWatched').max = entry.category==='movie' ? 1 : entry.totalEpisodes;
+      el('afEpisodesWatched').value = entry.episodesWatched;
+      el('epWatchedVal').textContent = entry.episodesWatched;
+      updatePlainSliderFill(el('afEpisodesWatched'));
+      el('afRewatch').value = entry.rewatch;
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+  });
+}
+
+init();
+</script>
+</body>
+</html>
